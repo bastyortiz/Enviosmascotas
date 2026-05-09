@@ -1,6 +1,7 @@
 package com.duoc.enviosmascotas.service;
 
 import com.duoc.enviosmascotas.dto.CrearEnvioRequest;
+import com.duoc.enviosmascotas.dto.ActualizarEnvioRequest;
 import com.duoc.enviosmascotas.model.Envio;
 import com.duoc.enviosmascotas.repository.EnvioRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,9 +15,14 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
+
+import org.springframework.web.server.ResponseStatusException;
 
 @ExtendWith(MockitoExtension.class)
 class EnvioServiceTest {
@@ -67,5 +73,33 @@ class EnvioServiceTest {
         assertEquals(1L, resultado.getId());
         assertEquals("Centro logistica Santiago", resultado.getUbicacionActual());
         verify(envioRepository).findById(1L);
+    }
+
+    @Test
+    void testActualizarEnvio() {
+        ActualizarEnvioRequest request = new ActualizarEnvioRequest();
+        request.setEstado("En transito");
+        request.setUbicacionActual("Ruta 68");
+
+        when(envioRepository.findById(1L)).thenReturn(Optional.of(envioGuardado));
+        when(envioRepository.save(any(Envio.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Envio resultado = envioService.actualizar(1L, request);
+
+        assertEquals("En transito", resultado.getEstado());
+        assertEquals("Ruta 68", resultado.getUbicacionActual());
+        verify(envioRepository).save(envioGuardado);
+    }
+
+    @Test
+    void testRetornarErrorSiEnvioNoExiste() {
+        when(envioRepository.findById(99L)).thenReturn(Optional.empty());
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> envioService.buscarPorId(99L));
+
+        assertEquals(NOT_FOUND, exception.getStatusCode());
+        assertEquals("Envio no encontrado", exception.getReason());
+        verify(envioRepository, never()).save(any(Envio.class));
     }
 }

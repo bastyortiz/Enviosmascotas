@@ -59,7 +59,7 @@ public class EnvioController {
     }
 
     @PutMapping("/{id}")
-    public Envio actualizar(@PathVariable Long id, @RequestBody ActualizarEnvioRequest request) {
+    public Envio actualizar(@PathVariable Long id, @Valid @RequestBody ActualizarEnvioRequest request) {
         return envioService.actualizar(id, request);
     }
 
